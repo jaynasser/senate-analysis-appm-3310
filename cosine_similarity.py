@@ -9,30 +9,37 @@ import pandas as pd
 
 def split_votes_df_by_party(df_votes: pd.DataFrame, df_senators: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
 	
-	def calculate_most_popular_nonzero_vote(votes: pd.Series) -> int:
+	def calculate_most_popular_nonzero_votes(votes: pd.Series) -> np.ndarray:
 
 		counts = votes.value_counts()
 
-		if counts.index[0] != 0:
-			return counts.index[0]
-		elif len(counts) == 1:
-			raise ValueError('Unable to compute most popular nonzero vote due to unanimous abstinence.')
+		if len(counts) == 1:
+			if counts.index[0] != 0:
+				return np.array(counts.index[0])
+			else:
+				raise ValueError('Unable to compute most popular nonzero vote due to unanimous abstinence.')
 		else:
-			return counts.index[1]
+			if counts.index[0] != 0:
+				if counts.iloc[0] != counts.iloc[1]:
+					return np.array(counts.index[0])
+				else:
+					return np.array((counts.index[0], counts.index[1]))
+			else:
+				return np.array(counts.index[1])
 
-	
+
 	icpsr_to_party = dict(zip(df_senators['icpsr'], df_senators['party_code']))
 	
 	df_votes_party = df_votes.copy()
 	df_votes_party['party_code'] = df_votes.icpsr.map(icpsr_to_party)
 	df_votes_party = df_votes_party.merge(
-		df_votes_party.groupby(['party_code', 'rollnumber'])['cast_code'].apply(calculate_most_popular_nonzero_vote).rename(index='majority_vote'),
+		df_votes_party.groupby(['party_code', 'rollnumber'])['cast_code'].apply(calculate_most_popular_nonzero_votes).rename(index='majority_vote'),
 		how='left',
 		left_on=['party_code', 'rollnumber'],
 		right_index=True
 	)
 
-	df_votes_party['vote_relative_to_majority'] = df_votes_party.apply(lambda x: x.cast_code * x.majority_vote, axis=1)
+	df_votes_party['vote_relative_to_majority'] = df_votes_party.apply(lambda x: np.max(x.cast_code * x.majority_vote), axis=1)
 
 	df_votes_party = df_votes_party[['rollnumber', 'icpsr', 'vote_relative_to_majority', 'party_code']]
 
@@ -53,15 +60,23 @@ def create_vote_matrix(df_votes: pd.DataFrame) -> np.ndarray:
 	return vote_matrix
 
 
-def create_cosine_similarity_matrix(df_votes: pd.DataFrame) -> np.ndarray:
+def create_cosine_similarity_matrix(df_votes: pd.DataFrame, dissent_index: bool = False) -> np.ndarray:
 
 	vote_matrix = create_vote_matrix(df_votes)
 
 	d = vote_matrix.T @ vote_matrix
 	norm = (vote_matrix * vote_matrix).sum(0, keepdims=True) ** .5
 	cos_mat = d / norm / norm.T
+	
+	if dissent_index:
+		return 1 - cos_mat
+	else:
+		return cos_mat
 
-	return cos_mat
+
+def cos_sim_mat_sum(matrix: np.ndarray) -> np.ndarray:
+	
+	return np.sum(matrix, axis=1) # axis 0 and axis 1 have the same sums
 
 
 def plot_cosine_similarity_matrix(

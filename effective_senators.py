@@ -6,7 +6,7 @@ import numpy as np
 
 def compute_num_effective_senators(matrix: np.ndarray) -> float:
 
-	vote_record_freqs = np.unique(matrix, return_counts=True, axis=0)[1] # frequencies of unique columns of vote matrix
+	vote_record_freqs = np.unique(matrix, return_counts=True, axis=1)[1] # frequencies of unique rows of vote matrix
 
 	vote_record_relative_freqs = vote_record_freqs / sum(vote_record_freqs) # normalization
 

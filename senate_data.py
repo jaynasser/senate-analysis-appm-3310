@@ -17,7 +17,8 @@ def create_senators_df() -> pd.DataFrame:
 
 	df_senators.party_code.replace(328, 100, inplace=True) # classify independents as democrats for simplicity
 
-	get_president_icpsrs(df_senators)
+	if 'president_icpsrs' not in globals():
+		get_president_icpsrs(df_senators)
 
 	df_senators.drop(df_senators[df_senators.icpsr.isin(president_icpsrs)].index, inplace=True)
 	df_senators = df_senators[['icpsr', 'state_abbrev', 'party_code', 'bioname']]
@@ -30,6 +31,7 @@ def create_votes_df() -> pd.DataFrame:
 	df_votes = pd.read_csv(VOTES_CSV_FP)
 
 	df_votes.drop(['congress', 'chamber', 'prob'], axis=1, inplace=True)
+	
 	df_votes.drop(df_votes[df_votes.icpsr.isin(president_icpsrs)].index, inplace=True)
 
 	df_votes['cast_code'] = df_votes['cast_code'].map({1: 1, 6: -1, 7: 0, 9: 0}) # reassign cast codes (1 for yea, -1 for nea, 0 for present or abstain)
