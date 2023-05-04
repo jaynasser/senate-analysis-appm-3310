@@ -1,26 +1,26 @@
-from constants import *
+from constants import SENATORS_CSV_FP, VOTES_CSV_FP
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
 
-def get_president_icpsrs(df_senators: pd.DataFrame) -> None:
+def get_icpsrs_to_ignore(df_senators: pd.DataFrame) -> None:
 
-	global president_icpsrs
-	president_icpsrs = list(df_senators[df_senators['chamber'] == 'President']['icpsr'])
+	global icpsrs_to_ignore
+	icpsrs_to_ignore = list(
+		df_senators[(df_senators['chamber'] == 'President') | (~df_senators['party_code'].isin([100, 200]))]['icpsr']
+	)
 
 
 def create_senators_df() -> pd.DataFrame:
 
 	df_senators = pd.read_csv(SENATORS_CSV_FP)
 
-	df_senators.party_code.replace(328, 100, inplace=True) # classify independents as democrats for simplicity
+	if 'icpsrs_to_ignore' not in globals():
+		get_icpsrs_to_ignore(df_senators)
 
-	if 'president_icpsrs' not in globals():
-		get_president_icpsrs(df_senators)
-
-	df_senators.drop(df_senators[df_senators.icpsr.isin(president_icpsrs)].index, inplace=True)
+	df_senators.drop(df_senators[df_senators.icpsr.isin(icpsrs_to_ignore)].index, inplace=True)
 	df_senators = df_senators[['icpsr', 'state_abbrev', 'party_code', 'bioname']]
 
 	return df_senators
@@ -31,10 +31,16 @@ def create_votes_df() -> pd.DataFrame:
 	df_votes = pd.read_csv(VOTES_CSV_FP)
 
 	df_votes.drop(['congress', 'chamber', 'prob'], axis=1, inplace=True)
-	
-	df_votes.drop(df_votes[df_votes.icpsr.isin(president_icpsrs)].index, inplace=True)
 
-	df_votes['cast_code'] = df_votes['cast_code'].map({1: 1, 6: -1, 7: 0, 9: 0}) # reassign cast codes (1 for yea, -1 for nea, 0 for present or abstain)
+	if 'icpsrs_to_ignore' not in globals():
+		raise NameError('Global variable icpsrs_to_ignore must be defined. \
+			Run get_icpsrs_to_ignore() or create_senators_df() first to fix this.')
+
+	df_votes.drop(df_votes[df_votes.icpsr.isin(icpsrs_to_ignore)].index, inplace=True)
+
+	df_votes['cast_code'] = df_votes['cast_code'].map(
+		{1: 1, 2: 1, 3: 1, 4: -1, 5: -1, 6: -1, 7: 0, 8:0, 9: 0} # reassign cast codes (1 for yea, -1 for nea, 0 for present or abstain)
+	)
 
 	present_combinations = set(df_votes.groupby(['rollnumber', 'icpsr']).groups)
 	all_combinations = set()
@@ -62,7 +68,3 @@ def create_votes_df() -> pd.DataFrame:
 	df_votes.drop(columns='relative_zeros')
 
 	return df_votes
-
-
-if __name__ == '__main__':
-	df_senators, df_votes = create_senators_df(), create_votes_df()

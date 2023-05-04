@@ -18,6 +18,7 @@ def split_votes_df_by_party(df_votes: pd.DataFrame, df_senators: pd.DataFrame) -
 				return np.array(counts.index[0])
 			else:
 				raise ValueError('Unable to compute most popular nonzero vote due to unanimous abstinence.')
+				# TODO: if all entries in a row are zero, a zero mode will not cause math issues. consider returning 0 in this case.
 		else:
 			if counts.index[0] != 0:
 				if counts.iloc[0] != counts.iloc[1]:
@@ -81,9 +82,6 @@ def create_cosine_similarity_matrix(df_votes: pd.DataFrame, dissent_index: bool 
 
 def cos_sim_mat_sum(matrix: np.ndarray, include_self: bool = True) -> np.ndarray:
 	
-<<<<<<< Updated upstream
-	return np.sum(matrix, axis=1) # axis 0 and axis 1 have the same sums
-=======
 	result = np.sum(matrix, axis=1) # both axes have the same sums since cos sim matrix is symmetric
 	
 	if include_self:
@@ -116,7 +114,6 @@ def compute_individual_similarities(matrix: np.ndarray, names: np.ndarray = None
 				key=lambda x: x[1]
 			)
 		)
->>>>>>> Stashed changes
 
 
 def plot_cosine_similarity_matrix(
@@ -126,7 +123,8 @@ def plot_cosine_similarity_matrix(
 	saveout: bool = False,
 	saveout_fp: str = './senate_cos_sim.png',
 	figsize: Tuple[float, float] = (30, 30),
-	cmap: str = 'hot'
+	cmap: str = 'hot',
+	colorbar_min: float = 0.3
 ) -> None:
 
 	plot_labels = fetch_relevant_names(df_senators, df_votes)
@@ -136,7 +134,7 @@ def plot_cosine_similarity_matrix(
 
 	im = ax.matshow(matrix, cmap=cmap)
 	fig.colorbar(im, fraction=0.046, pad=0.04)
-	im.set_clim(-0.3, 1)
+	im.set_clim(colorbar_min, 1)
 
 	ax.set_xticks(np.arange(len(plot_labels)))
 	ax.set_xticklabels(plot_labels, rotation=90)
@@ -162,17 +160,6 @@ def cos_sim(
 		df_votes=df_votes
 	)
 
-<<<<<<< Updated upstream
-	if df_votes is None:
-		df_votes = create_votes_df()
-
-	df_votes_dem, df_votes_rep = split_votes_df_by_party(df_votes, df_senators)
-
-	cos_mat_dem, cos_mat_rep = create_cosine_similarity_matrix(df_votes_dem), create_cosine_similarity_matrix(df_votes_rep)
-
-	plot_cosine_similarity_matrix(df_senators, df_votes_dem, cos_mat_dem, saveout=saveout_plot, saveout_fp=saveout_fp[0])
-	plot_cosine_similarity_matrix(df_senators, df_votes_rep, cos_mat_rep, saveout=saveout_plot, saveout_fp=saveout_fp[1])
-=======
 	cos_sim_min = np.min(
 		[np.min(cos_mat_dem), np.min(cos_mat_rep)]
 	)
@@ -193,7 +180,6 @@ def cos_sim(
 		saveout_fp=saveout_fp[1],
 		colorbar_min=cos_sim_min
 	)
->>>>>>> Stashed changes
 
 
 def create_all_matrices(
@@ -224,9 +210,8 @@ def plot_individual_similarities_by_party(
 	saveout_fp: str = './individual_similarities_by_party.png',
 	figsize: Tuple[float, float] = (30, 30)
 ) -> None:
-	
-#	plt.figure(figsize=figsize)
-	plt.figure(dpi=300)
+
+	plt.figure(figsize=figsize)
 	plt.boxplot([individual_similarities_dem, individual_similarities_rep])
 
 	plt.xticks([1, 2], ['D', 'R'])

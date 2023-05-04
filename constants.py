@@ -6,3 +6,5 @@ load_dotenv()
 
 SENATORS_CSV_FP = os.environ['SENATORS_CSV_FP']
 VOTES_CSV_FP = os.environ['VOTES_CSV_FP']
+
+VOTEVIEW_DATA_URL = 'https://voteview.com/static/data/out'
