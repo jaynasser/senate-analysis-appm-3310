@@ -1,6 +1,9 @@
 from cosine_similarity import create_vote_matrix, split_votes_df_by_party
 from senate_data import create_senators_df, create_votes_df
 
+from typing import Literal
+
+import matplotlib.pyplot as plt
 import numpy as np
 import scipy.linalg as la
 
@@ -21,6 +24,11 @@ def compute_num_effective_senators(matrix: np.ndarray) -> float:
 def singular_value_decomposition(matrix: np.ndarray):
 
 	singular_values, singular_vectors = la.svd(matrix)[1: 3]
+	singular_vectors = singular_vectors.T
+	
+	if singular_vectors[0, 0] < 0:
+		singular_vectors *= -1
+	
 	singular_value_freqs = singular_values / sum(singular_values)
 
 	return singular_values, singular_value_freqs, singular_vectors
@@ -51,16 +59,16 @@ def compute_margin_error(vote_matrix: np.ndarray, singular_vectors: np.ndarray, 
 	return np.sum(np.abs(actual_margins - margin_approx))
 
 
-def plot_margin_errors(vote_matrix: np.ndarray, singular_vectors: np.ndarray, party: str, saveout: bool = False) -> None:
+def plot_margin_errors(vote_matrix: np.ndarray, singular_vectors: np.ndarray, party: Literal['Democrat', 'Republican'], saveout: bool = False) -> None:
 	
 	margin_errors = []
 	senators_range = range(1, vote_matrix.shape[1])
 	for n in senators_range:
-		margin_errors.append(compute_margin_error(vote_matrix, singular_vectors, n))
-	
+		margin_errors.append(compute_margin_error(vote_matrix, singular_vectors.T, n))
+
 	plt.plot(list(senators_range), margin_errors)
 	plt.title(f'Errors for {party} Vote Margin Approximations')
-	plt.xlabel('Number of Senators in Approximation')
+	plt.xlabel('Dimension of Approximation')
 	plt.ylabel('Margin Error')
 	
 	if saveout:

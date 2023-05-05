@@ -34,7 +34,7 @@ def create_votes_df() -> pd.DataFrame:
 
 	if 'icpsrs_to_ignore' not in globals():
 		raise NameError('Global variable icpsrs_to_ignore must be defined. \
-			Run get_icpsrs_to_ignore() or create_senators_df() first to fix this.')
+Run get_icpsrs_to_ignore() or create_senators_df() first to fix this.')
 
 	df_votes.drop(df_votes[df_votes.icpsr.isin(icpsrs_to_ignore)].index, inplace=True)
 

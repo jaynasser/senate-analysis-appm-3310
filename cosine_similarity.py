@@ -18,7 +18,6 @@ def split_votes_df_by_party(df_votes: pd.DataFrame, df_senators: pd.DataFrame) -
 				return np.array(counts.index[0])
 			else:
 				raise ValueError('Unable to compute most popular nonzero vote due to unanimous abstinence.')
-				# TODO: if all entries in a row are zero, a zero mode will not cause math issues. consider returning 0 in this case.
 		else:
 			if counts.index[0] != 0:
 				if counts.iloc[0] != counts.iloc[1]:
